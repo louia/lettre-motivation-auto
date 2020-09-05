@@ -1,0 +1,116 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Lettre de motivation automatique !{% endblock %}
+
+{% block body %}
+    <section class="hero is-light is-bold">
+        <div class="hero-body">
+            <div class="container">
+                <h1 class="title">
+                    Générateur de lettre de motivation
+                </h1>
+                <h2>Remplacer les arguments cités par le bon format dans votre .docx. Les clés sont présicées pour chaque champ.
+                    <pre class="code">Format : ${clé}
+
+Date : ${date}</pre>
+                    </h2>
+            </div>
+        </div>
+    </section>
+
+    <div class="columns">
+        <div class="column"></div>
+        <div class="column is-half">
+            <br>
+            {{ form(form) }}
+
+        </div>
+        <div class="column"></div>
+    </div>
+{% endblock %}
+
+{% block javascripts %}
+    <script>
+        const movies = new Bloodhound({
+            datumTokenizer: datum => Bloodhound.tokenizers.whitespace(datum.value),
+            queryTokenizer: Bloodhound.tokenizers.whitespace,
+            remote: {
+                wildcard: '%QUERY',
+                url: 'https://entreprise.data.gouv.fr/api/sirene/v1/full_text/%QUERY',
+                // Map the remote source JSON array to a JavaScript object array
+                transform: response => $.map(response.etablissement, movie => ({
+                    value: movie.nom_raison_sociale,
+                    addr_show : movie.l4_normalisee + ' ' + movie.l6_normalisee,
+                    addr : movie.l4_normalisee,
+                    codep : movie.l6_normalisee
+                }))
+            },
+        });
+        console.log(movies);
+
+        $('.typeahead').typeahead(null, {
+            display: 'value',
+            source: movies,
+                        templates: {
+                suggestion: function (data) {
+                    return '<p><strong>' + data.value + '</strong> - ' + data.addr_show + '</p>';
+                }
+            }
+        });
+        $('.typeahead').on('typeahead:selected', function (e, value) {
+            $("#motivation_adresse").val(value.addr);
+            $("#motivation_villeCodeP").val(value.codep);
+        });
+    </script>
+{% endblock %}
+
+{% block stylesheets %}
+    <style>
+        .code{
+            background-color: #1a202c;
+            font-family: Menlo,Monaco,Consolas,Liberation Mono,Courier New,monospace;
+            color: #fff;
+            overflow-x: auto;
+            padding : 10px;
+        }
+        .tt-query {
+            -webkit-box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.075);
+            -moz-box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.075);
+            box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.075);
+        }
+
+        .tt-hint {
+            color: #999
+        }
+
+        .tt-menu {    /* used to be tt-dropdown-menu in older versions */
+            /*width: 422px;*/
+            margin-top: 4px;
+            padding: 4px 0;
+            background-color: #fff;
+            border: 1px solid #ccc;
+            border: 1px solid rgba(0, 0, 0, 0.2);
+            -webkit-border-radius: 4px;
+            -moz-border-radius: 4px;
+            border-radius: 4px;
+            -webkit-box-shadow: 0 5px 10px rgba(0,0,0,.2);
+            -moz-box-shadow: 0 5px 10px rgba(0,0,0,.2);
+            box-shadow: 0 5px 10px rgba(0,0,0,.2);
+        }
+
+        .tt-suggestion {
+            padding: 3px 20px;
+            line-height: 24px;
+        }
+
+        .tt-suggestion.tt-cursor,.tt-suggestion:hover {
+            color: #fff;
+            background-color: #0097cf;
+
+        }
+
+        .tt-suggestion p {
+            margin: 0;
+        }
+    </style>
+{% endblock %}
