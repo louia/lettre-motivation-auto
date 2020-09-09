@@ -4,6 +4,7 @@ namespace App\Entity;
 
 use App\Repository\LettreMotivRepository;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Validator\Constraints as Assert;
 
 /**
  * @ORM\Entity(repositoryClass=LettreMotivRepository::class)
@@ -20,11 +21,13 @@ class LettreMotiv
 
     /**
      * @ORM\Column(type="string", length=255)
+     * @Assert\NotNull
      */
     private $wordFilename;
 
     /**
      * @ORM\Column(type="string", length=255)
+     * @Assert\NotNull
      */
     private $NomEntreprise;
 
@@ -101,6 +104,7 @@ class LettreMotiv
     public function setCreatedAt(): self
     {
         $this->CreatedAt = new \DateTime();
+
         return $this;
     }
 
@@ -127,5 +131,4 @@ class LettreMotiv
 
         return $this;
     }
-
 }

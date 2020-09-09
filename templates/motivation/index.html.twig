@@ -13,7 +13,7 @@
                     <pre class="code">Format : ${clé}
 
 Date : ${date}</pre>
-                    </h2>
+                </h2>
             </div>
         </div>
     </section>
@@ -23,7 +23,7 @@ Date : ${date}</pre>
         <div class="column is-half">
             <br>
             {{ form(form) }}
-
+            <br><br><br>
         </div>
         <div class="column"></div>
     </div>
@@ -31,7 +31,7 @@ Date : ${date}</pre>
 
 {% block javascripts %}
     <script>
-        const movies = new Bloodhound({
+        const entreprises = new Bloodhound({
             datumTokenizer: datum => Bloodhound.tokenizers.whitespace(datum.value),
             queryTokenizer: Bloodhound.tokenizers.whitespace,
             remote: {
@@ -46,21 +46,78 @@ Date : ${date}</pre>
                 }))
             },
         });
-        console.log(movies);
 
-        $('.typeahead').typeahead(null, {
-            display: 'value',
-            source: movies,
-                        templates: {
-                suggestion: function (data) {
-                    return '<p><strong>' + data.value + '</strong> - ' + data.addr_show + '</p>';
+        $('#motivation_NomEntreprise')
+            .typeahead(null, {
+                display: 'value',
+                source: entreprises,
+                templates: {
+                    suggestion: function (data) {
+                        return '<p><strong>' + data.value + '</strong> - ' + data.addr_show + '</p>';
+                    }
                 }
+            })
+            .on('typeahead:selected', function (e, value) {
+                $("#motivation_adresse").val(value.addr);
+                $("#motivation_villeCodeP").val(value.codep);
+            });
+
+        var postes = new Bloodhound({
+            datumTokenizer: Bloodhound.tokenizers.obj.whitespace('nom'),
+            queryTokenizer: Bloodhound.tokenizers.whitespace,
+            identify: function(obj) { return obj.nom; },
+            prefetch: '/postes.json',
+
+        });
+        postes.clear();
+        postes.clearPrefetchCache();
+        postes.clearRemoteCache();
+        postes.initialize(true);
+
+        function nflTeamsWithDefaults(q, sync) {
+            if (q === '') {
+                sync(postes.all());
             }
+
+            else {
+                postes.search(q, sync);
+            }
+
+        }
+
+        $('#motivation_NomPoste')
+            .typeahead({
+                    minLength: 0,
+                    highlight: true
+                },
+                {
+                    name: 'nfl-teams',
+                    display: 'nom',
+                    limit: 10,
+                    source: nflTeamsWithDefaults
+                });
+
+        $("label.required").append("<span class='rounded-dots'></span>");
+
+        $("#motivation_wordFilename")
+            .addClass("file-input")
+            .wrap("<label></label>").parent().addClass("file-label")
+            .append("<span class='file-cta'></span>").children()
+            .append("<span class='file-icon'></span>").children()
+            .append("<i class='fas fa-upload'></i>");
+        $(".file-cta").append("<span class='file-label'>Choisir un fichier</span>").parent().parent().removeClass().addClass("file has-name")
+
+        $(function() {
+            $("input:file").change(function (){
+                var fileName = $(this).get(0).files.item(0).name;
+                $(".file-name").remove();
+                $("label.file-label").append("<span class='file-name'>"+ fileName +"</span>")
+            });
         });
-        $('.typeahead').on('typeahead:selected', function (e, value) {
-            $("#motivation_adresse").val(value.addr);
-            $("#motivation_villeCodeP").val(value.codep);
-        });
+
+        $('.typeahead')
+            .attr("autocomplete", "unique-field-name")
+        // .attr("name", "unique-name");
     </script>
 {% endblock %}
 
@@ -73,6 +130,16 @@ Date : ${date}</pre>
             overflow-x: auto;
             padding : 10px;
         }
+
+        .rounded-dots {
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            background: red;
+            display: inline-block;
+            margin: 4px 4px;
+        }
+
         .tt-query {
             -webkit-box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.075);
             -moz-box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.075);

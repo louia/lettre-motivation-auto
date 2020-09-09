@@ -10,6 +10,7 @@
         "doctrine/doctrine-bundle": "^2.1",
         "doctrine/doctrine-migrations-bundle": "^3.0",
         "doctrine/orm": "^2.7",
+        "friendsofphp/php-cs-fixer": "^2.16",
         "phpdocumentor/reflection-docblock": "^5.2",
         "phpoffice/phpword": "^0.17.0",
         "sensio/framework-extra-bundle": "^5.1",
@@ -42,12 +43,15 @@
         "twig/twig": "^2.12|^3.0"
     },
     "require-dev": {
+        "doctrine/doctrine-fixtures-bundle": "^3.3",
         "symfony/browser-kit": "^5.1",
         "symfony/css-selector": "^5.1",
         "symfony/debug-bundle": "^5.1",
         "symfony/maker-bundle": "^1.0",
         "symfony/phpunit-bridge": "^5.1",
-        "symfony/var-dumper": "^5.1"
+        "symfony/stopwatch": "^5.1",
+        "symfony/var-dumper": "^5.1",
+        "symfony/web-profiler-bundle": "^5.1"
     },
     "config": {
         "optimize-autoloader": true,
@@ -76,6 +80,13 @@
         "symfony/polyfill-php56": "*"
     },
     "scripts": {
+        "cs" : "./vendor/bin/php-cs-fixer fix",
+        "db" : [
+            "php bin/console doctrine:database:drop --force --if-exists",
+            "php bin/console doctrine:database:create",
+            "php bin/console doctrine:migrations:migrate",
+            "php bin/console doctrine:fixtures:load --append"
+        ],
         "auto-scripts": {
             "cache:clear": "symfony-cmd",
             "assets:install %PUBLIC_DIR%": "symfony-cmd"
