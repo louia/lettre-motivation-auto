@@ -14,7 +14,6 @@ use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\HttpFoundation\HeaderUtils;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
-use Symfony\Component\Mime\MimeTypes;
 use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\Serializer\Encoder\JsonEncoder;
 use Symfony\Component\Serializer\Normalizer\AbstractNormalizer;
@@ -37,27 +36,23 @@ class MotivationController extends AbstractController
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
-            /** @var UploadedFile $brochureFile */
-            $brochureFile = $form->get('wordFilename')->getData();
-            $mimeTypes = new MimeTypes();
+            /** @var UploadedFile $docxFile */
+            $docxFile = $form->get('wordFilename')->getData();
 
-            $mimeTypes = $mimeTypes->getMimeTypes('docx');
-            dump($mimeTypes);
-
-            $originalFilename = pathinfo($brochureFile->getClientOriginalName(), PATHINFO_FILENAME);
+            $originalFilename = pathinfo($docxFile->getClientOriginalName(), PATHINFO_FILENAME);
             $safeFilename = $slugger->slug($originalFilename);
-            $newFilename = $safeFilename.'-'.uniqid().'.'.$brochureFile->getClientOriginalExtension();
+            $newFilename = $safeFilename.'-'.uniqid().'.'.$docxFile->getClientOriginalExtension();
             $filenameWithoutExt = $safeFilename.'-'.uniqid();
 
             try {
-                $brochureFile->move(
+                $docxFile->move(
                     $this->getParameter('lettre_motiv_directory'),
                     $newFilename
                 );
             } catch (FileException $e) {
                 dump($e->getMessage());
             }
-            $templateProcessor = new \PhpOffice\PhpWord\TemplateProcessor('../public/'.$this->getParameter('lettre_motiv_directory').$newFilename);
+            $templateProcessor = new \PhpOffice\PhpWord\TemplateProcessor( $this->getParameter('lettre_motiv_directory').$newFilename);
 
             $templateProcessor->setValues([
                 'date' => strftime('%e %B %Y'),
@@ -67,21 +62,27 @@ class MotivationController extends AbstractController
             ]);
             $templateProcessor->saveAs($this->getParameter('lettre_motiv_directory').$filenameWithoutExt.'_MODIFIED.docx');
 
-            $phpWord = \PhpOffice\PhpWord\IOFactory::load('../public/'.$this->getParameter('lettre_motiv_directory').$filenameWithoutExt.'_MODIFIED.docx');
-            \PhpOffice\PhpWord\Settings::setPdfRendererPath('../vendor/tecnickcom/tcpdf');
+            $phpWord = \PhpOffice\PhpWord\IOFactory::load($this->getParameter('lettre_motiv_directory').$filenameWithoutExt.'_MODIFIED.docx');
+            \PhpOffice\PhpWord\Settings::setPdfRendererPath('vendor/tecnickcom/tcpdf');
             \PhpOffice\PhpWord\Settings::setPdfRendererName('TCPDF');
 
             $xmlWriter = \PhpOffice\PhpWord\IOFactory::createWriter($phpWord, 'PDF');
-            $xmlWriter->save('../public/'.$this->getParameter('lettre_motiv_directory').$filenameWithoutExt.'.pdf');
+            $xmlWriter->save($this->getParameter('lettre_motiv_directory').$filenameWithoutExt.'.pdf');
 
             $filesystem = new Filesystem();
-            try {
-                $filesystem->remove([
-                    '../public/'.$this->getParameter('lettre_motiv_directory').$filenameWithoutExt.'_MODIFIED.docx',
-                    '../public/'.$this->getParameter('lettre_motiv_directory').$newFilename,
-                ]);
-            } catch (IOExceptionInterface $exception) {
-            }
+//            try {
+//                $filesystem->remove([
+//                   $this->getParameter('lettre_motiv_directory').$filenameWithoutExt.'_MODIFIED.docx',
+//                    $this->getParameter('lettre_motiv_directory').$newFilename,
+//                ]);
+//            } catch (IOExceptionInterface $exception) {
+//            }
+
+            $lettreMotiv->setWordFilename($filenameWithoutExt.'.pdf');
+
+            $entityManager = $this->getDoctrine()->getManager();
+            $entityManager->persist($lettreMotiv);
+            $entityManager->flush();
 
             $response = new BinaryFileResponse($this->getParameter('lettre_motiv_directory').$filenameWithoutExt.'.pdf');
 

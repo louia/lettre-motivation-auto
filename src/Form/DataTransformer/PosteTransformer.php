@@ -50,7 +50,6 @@ class PosteTransformer implements DataTransformerInterface
             $neededObject = $this->entityManager->getRepository(Poste::class)->findOneBy([
                     'nom' => $poste,
                 ]);
-            dump($neededObject);
 
             return $neededObject;
         }

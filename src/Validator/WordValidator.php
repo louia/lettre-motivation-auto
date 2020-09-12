@@ -17,7 +17,7 @@ class WordValidator extends ConstraintValidator
         if (null === $value || '' === $value) {
             return;
         }
-
+dump($value->getClientMimeType());
         if ('application/vnd.openxmlformats-officedocument.wordprocessingml.document' != $value->getClientMimeType()) {
             $this->context->buildViolation($constraint->message)
                 ->setParameter('{{ value }}', $value->getClientOriginalName())
