@@ -5,6 +5,7 @@ namespace App\Controller;
 use App\Entity\LettreMotiv;
 use App\Entity\Poste;
 use App\Form\Type\MotivationType;
+use PhpOffice\PhpWord\Settings;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\Filesystem\Exception\IOExceptionInterface;
 use Symfony\Component\Filesystem\Filesystem;
@@ -52,7 +53,7 @@ class MotivationController extends AbstractController
             } catch (FileException $e) {
                 dump($e->getMessage());
             }
-            $templateProcessor = new \PhpOffice\PhpWord\TemplateProcessor( $this->getParameter('lettre_motiv_directory').$newFilename);
+            $templateProcessor = new \PhpOffice\PhpWord\TemplateProcessor($this->getParameter('lettre_motiv_directory').$newFilename);
 
             $templateProcessor->setValues([
                 'date' => strftime('%e %B %Y'),
@@ -63,8 +64,10 @@ class MotivationController extends AbstractController
             $templateProcessor->saveAs($this->getParameter('lettre_motiv_directory').$filenameWithoutExt.'_MODIFIED.docx');
 
             $phpWord = \PhpOffice\PhpWord\IOFactory::load($this->getParameter('lettre_motiv_directory').$filenameWithoutExt.'_MODIFIED.docx');
-            \PhpOffice\PhpWord\Settings::setPdfRendererPath('vendor/tecnickcom/tcpdf');
-            \PhpOffice\PhpWord\Settings::setPdfRendererName('TCPDF');
+            if (!Settings::setPdfRendererPath('vendor/tecnickcom/tcpdf')) {
+                Settings::setPdfRendererPath('../vendor/tecnickcom/tcpdf');
+            }
+            Settings::setPdfRendererName('TCPDF');
 
             $xmlWriter = \PhpOffice\PhpWord\IOFactory::createWriter($phpWord, 'PDF');
             $xmlWriter->save($this->getParameter('lettre_motiv_directory').$filenameWithoutExt.'.pdf');

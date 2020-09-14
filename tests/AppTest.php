@@ -22,7 +22,6 @@ class AppTest extends WebTestCase
             ['nom' => 'développeur mobile'],
             ['nom' => 'développeur web'],
             ['nom' => 'développeur web et mobile'],
-
         ];
         $this->assertEquals($data, json_decode($client->getResponse()->getContent(), true));
     }
@@ -33,15 +32,15 @@ class AppTest extends WebTestCase
         $crawler = $client->request('GET', '/');
 
         $form = $crawler->selectButton('Envoyer')->form();
-        $form["motivation[NomEntreprise]"]->setValue('Apple');
-        $form["motivation[adresse]"]->setValue('54 rue du calvaire');
-        $form["motivation[villeCodeP]"]->setValue('97000 Paris');
-        $form["motivation[NomPoste]"]->setValue('développeur web et mobile');
+        $form['motivation[NomEntreprise]']->setValue('Apple');
+        $form['motivation[adresse]']->setValue('54 rue du calvaire');
+        $form['motivation[villeCodeP]']->setValue('97000 Paris');
+        $form['motivation[NomPoste]']->setValue('développeur web et mobile');
         $form['motivation[wordFilename]']->upload('public/test.docx');
 
         $client->submit($form);
 
-        $this->assertEquals("",$client->getResponse()->getContent());
+        $this->assertEquals('', $client->getResponse()->getContent());
 
         $motiv = self::$container->get('doctrine')->getManager()->getRepository(LettreMotiv::class)
             ->findOneBy(['NomEntreprise' => 'Apple']);
@@ -52,6 +51,31 @@ class AppTest extends WebTestCase
         $this->assertResponseStatusCodeSame(200);
     }
 
+    public function testForDocxToPdfExistingPoste()
+    {
+        $client = static::createClient();
+        $crawler = $client->request('GET', '/');
+
+        $form = $crawler->selectButton('Envoyer')->form();
+        $form['motivation[NomEntreprise]']->setValue('Apple');
+        $form['motivation[adresse]']->setValue('54 rue du calvaire');
+        $form['motivation[villeCodeP]']->setValue('97000 Paris');
+        $form['motivation[NomPoste]']->setValue('développeur web');
+        $form['motivation[wordFilename]']->upload('public/test.docx');
+
+        $client->submit($form);
+
+        $this->assertEquals('', $client->getResponse()->getContent());
+
+        $motiv = self::$container->get('doctrine')->getManager()->getRepository(Poste::class)
+            ->findBy(['nom' => 'développeur web']);
+
+        $this->assertSame(1, count($motiv));
+        $this->assertSame('développeur web', $motiv[0]->getNom());
+
+        $this->assertResponseIsSuccessful();
+        $this->assertResponseStatusCodeSame(200);
+    }
 
     public function testForDocxToPdfNewPoste()
     {
@@ -59,20 +83,43 @@ class AppTest extends WebTestCase
         $crawler = $client->request('GET', '/');
 
         $form = $crawler->selectButton('Envoyer')->form();
-        $form["motivation[NomEntreprise]"]->setValue('Apple');
-        $form["motivation[adresse]"]->setValue('54 rue du calvaire');
-        $form["motivation[villeCodeP]"]->setValue('97000 Paris');
-        $form["motivation[NomPoste]"]->setValue('développeur web et mobile spécialisé WINDEV');
+        $form['motivation[NomEntreprise]']->setValue('Apple');
+        $form['motivation[adresse]']->setValue('54 rue du calvaire');
+        $form['motivation[villeCodeP]']->setValue('97000 Paris');
+        $form['motivation[NomPoste]']->setValue('développeur web et mobile spécialisé WINDEV');
         $form['motivation[wordFilename]']->upload('public/test.docx');
 
         $client->submit($form);
 
-        $this->assertEquals("",$client->getResponse()->getContent());
+        $this->assertEquals('', $client->getResponse()->getContent());
 
         $motiv = self::$container->get('doctrine')->getManager()->getRepository(Poste::class)
             ->findOneBy(['nom' => 'développeur web et mobile spécialisé WINDEV']);
 
         $this->assertSame('développeur web et mobile spécialisé WINDEV', $motiv->getNom());
+
+        $this->assertResponseIsSuccessful();
+        $this->assertResponseStatusCodeSame(200);
+    }
+
+    public function testForDocxToPdfWrongFileType()
+    {
+        $client = static::createClient();
+        $crawler = $client->request('GET', '/');
+
+        $form = $crawler->selectButton('Envoyer')->form();
+        $form['motivation[NomEntreprise]']->setValue('Apple');
+        $form['motivation[adresse]']->setValue('54 rue du calvaire');
+        $form['motivation[villeCodeP]']->setValue('97000 Paris');
+        $form['motivation[NomPoste]']->setValue('développeur web et mobile spécialisé WINDEV');
+        $form['motivation[wordFilename]']->upload('public/test.txt');
+
+        $crawler = $client->submit($form);
+
+        $newCrawler = $crawler->filter('span.help.is-danger')
+            ->text()
+        ;
+        $this->assertEquals('Le fichier "test.txt" n\'est pas un fichier Word (.docx) !', $newCrawler);
 
         $this->assertResponseIsSuccessful();
         $this->assertResponseStatusCodeSame(200);
